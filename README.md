@@ -1,6 +1,6 @@
 # setup-graalvm
 
-This action sets up the GraalVM built by Gluon environment for using in GitHub Actions.
+This action sets up the [GraalVM built by Gluon](https://github.com/gluonhq/graal) environment for using in GitHub Actions.
 
 * It downloads (if it is not cached yet) required version of Gluon's build of GraalVM Community edition
 * Adds executors provided by GraalVM distribution to the environment
