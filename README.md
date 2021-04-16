@@ -1,65 +1,24 @@
 # setup-graalvm
 
-This action sets up GraalVM environment for using in GitHub Actions.
+This action sets up the GraalVM built by Gluon environment for using in GitHub Actions.
 
-* It downloads (if it is not cached yet) required version of GraalVM Community edition
+* It downloads (if it is not cached yet) required version of Gluon's build of GraalVM Community edition
 * Adds executors provided by GraalVM distribution to the environment
 * Register problem matchers for error output
-
-# Notes:
-
-Since version 19.3.0 each version of graalvm available with modifier to specify version of JDK. java8 and java11 are available atm.
 
 # Usage
 
 ```yaml
 steps:
 - uses: actions/checkout@latest
-- uses: DeLaGuardo/setup-graalvm@4.0
+- uses: gluonhq/setup-graalvm@master
+  # set GITHUB_TOKEN to avoid exceeding GitHub's API rate limit
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
-    # GraalVM version, no pattern syntax available atm
-    graalvm: '21.0.0.2'
-    # Java version, optional, defaults to 'java8'. Available options are 'java8' and 'java11'.
-    java: 'java11'
-    # Architecture flag, optional, defaults to 'amd64'. Available options are 'amd64' and 'aarch64'. Later is available only for linux runners.
-    arch: 'amd64'
+    # GraalVM version. Default: latest
+    graalvm: '21.1.0-dev-20210415_0700'
 - run: java -version
-```
-
-# Using GraalVM Component Updater (aka. gu)
-
-`gu` binary is available as `gu` on ubuntu and macos, on windows - as `gu.cmd`.
-
-``` yaml
-jobs:
-  sample-job:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        gu-binary: [gu, gu.cmd]
-        exclude:
-          - os: ubuntu-latest
-            gu-binary: gu.cmd
-          - os: macos-latest
-            gu-binary: gu.cmd
-          - os: windows-latest
-            gu-binary: gu
-    steps:
-      - name: Setup Graalvm
-        id: setup-graalvm
-        uses: DeLaGuardo/setup-graalvm@master
-        with:
-          # GraalVM version, no pattern syntax available atm
-          graalvm: '21.0.0.2'
-          # Java version, optional, defaults to 'java8'. Available options are 'java8' and 'java11'.
-          java: 'java11'
-          # Architecture flag, optional, defaults to 'amd64'. Available options are 'amd64' and 'aarch64'. Later is available only for linux runners.
-          arch: 'amd64'
-
-      - name: Install native-image component
-        run: |
-          ${{ matrix.gu-binary }} install native-image
 ```
 
 # License

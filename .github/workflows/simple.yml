@@ -8,6 +8,8 @@ jobs:
     steps:
       - name: Setup GraalVM
         uses: gluonhq/setup-graalvm@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check java binary
         run: java -version
@@ -31,6 +33,8 @@ jobs:
     steps:
       - name: Setup GraalVM
         uses: gluonhq/setup-graalvm@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check java binary
         run: java -version

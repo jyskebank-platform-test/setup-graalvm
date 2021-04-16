@@ -14,21 +14,21 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DeLaGuardo/setup-graalvm.git"
+    "url": "git+https://github.com/gluonhq/setup-graalvm.git"
   },
   "keywords": [
     "actions",
     "node",
     "setup"
   ],
-  "author": "DeLaGuardo",
+  "author": "Joeri Sykora <joeri.sykora@gluonhq.com>",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.2.6",
     "@actions/exec": "^1.0.4",
     "@actions/io": "^1.0.2",
     "@actions/tool-cache": "^1.6.1",
-    "@octokit/core": "^3.4.0"
+    "@octokit/action": "^3.7.1"
   },
   "devDependencies": {
     "@types/node": "^14.14.34",

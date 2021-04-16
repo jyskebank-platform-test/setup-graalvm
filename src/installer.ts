@@ -4,7 +4,7 @@ import * as exec from '@actions/exec'
 import * as tc from '@actions/tool-cache'
 import * as fs from 'fs'
 import * as path from 'path'
-import { Octokit } from '@octokit/core'
+import { Octokit } from '@octokit/action'
 
 let tempDirectory = process.env['RUNNER_TEMP'] || ''
 
