@@ -4,12 +4,14 @@ import * as exec from '@actions/exec'
 import * as tc from '@actions/tool-cache'
 import * as fs from 'fs'
 import * as path from 'path'
-import * as octokit from '@octokit/core'
+import { Octokit } from '@octokit/core'
 
 let tempDirectory = process.env['RUNNER_TEMP'] || ''
 
 const IS_WINDOWS = process.platform === 'win32'
 const IS_DARWIN = process.platform === 'darwin'
+
+const octokit = new Octokit()
 
 if (!tempDirectory) {
   let baseLocation
@@ -37,16 +39,16 @@ export async function getGraalVM(
   graalvm: string
 ): Promise<void> {
   let version = `${graalvm}`
-  if (graalvm === 'latest') {
+  if (version === 'latest') {
     const response = await octokit.request('GET /repos/{owner}/{repo}/releases/latest', {
       owner: 'gluonhq',
       repo: 'graal'
     })
-    version = response.tag_name
+    version = response.data.tag_name
   }
-  let graalvmShort = `${graalvm}`
-  if (graalvm.includes('-dev-')) {
-    graalvmShort = graalvm.substr(0, graalvm.indexOf('-dev-') + 4)
+  let graalvmShort = `${version}`
+  if (version.includes('-dev-')) {
+    graalvmShort = version.substr(0, version.indexOf('-dev-') + 4)
   }
 
   let toolPath = tc.find('GraalVM', getCacheVersionString(version), "amd64")
@@ -57,7 +59,7 @@ export async function getGraalVM(
   if (toolPath) {
     core.debug(`GraalVM found in cache ${toolPath}`)
   } else {
-    const downloadPath = `https://github.com/gluonhq/graal/releases/download/${graalvm}/graalvm-svm-${platform}-gluon-${graalvmShort}.zip`
+    const downloadPath = `https://github.com/gluonhq/graal/releases/download/${version}/graalvm-svm-${platform}-gluon-${graalvmShort}.zip`
 
     core.info(`Downloading Gluon's GraalVM from ${downloadPath}`)
 

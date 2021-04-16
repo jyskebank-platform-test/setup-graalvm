@@ -12,22 +12,22 @@ jobs:
       - name: Check java binary
         run: java -version
 
-      - name: Check gu binary
-        run: gu install native-image
+      - name: Check native-image binary
+        run: native-image --version
 
   simple:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        gu-binary: [gu, gu.cmd]
+        native-image-binary: [native-image, native-image.cmd]
         exclude:
           - os: ubuntu-latest
-            gu-binary: gu.cmd
+            native-image-binary: native-image.cmd
           - os: macos-latest
-            gu-binary: gu.cmd
+            native-image-binary: native-image.cmd
           - os: windows-latest
-            gu-binary: gu
+            native-image-binary: native-image
     steps:
       - name: Setup GraalVM
         uses: gluonhq/setup-graalvm@master
@@ -35,6 +35,6 @@ jobs:
       - name: Check java binary
         run: java -version
 
-      - name: Check gu binary
+      - name: Check native-image binary
         run: |
-          ${{ matrix.gu-binary }} install native-image
+          ${{ matrix.native-image-binary }} --version
