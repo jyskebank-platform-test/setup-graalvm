@@ -4,21 +4,21 @@ import * as exec from '@actions/exec'
 import * as tc from '@actions/tool-cache'
 import * as fs from 'fs'
 import * as path from 'path'
+import * as octokit from '@octokit/core'
 
 let tempDirectory = process.env['RUNNER_TEMP'] || ''
 
 const IS_WINDOWS = process.platform === 'win32'
+const IS_DARWIN = process.platform === 'darwin'
 
 if (!tempDirectory) {
   let baseLocation
   if (IS_WINDOWS) {
     baseLocation = process.env['USERPROFILE'] || 'C:\\'
+  } else if (IS_DARWIN) {
+    baseLocation = '/Users'
   } else {
-    if (process.platform === 'darwin') {
-      baseLocation = '/Users'
-    } else {
-      baseLocation = '/home'
-    }
+    baseLocation = '/home'
   }
   tempDirectory = path.join(baseLocation, 'actions', 'temp')
 }
@@ -27,22 +27,29 @@ let platform = ''
 
 if (IS_WINDOWS) {
   platform = 'windows'
+} else if (IS_DARWIN) {
+  platform = 'darwin'
 } else {
-  if (process.platform === 'darwin') {
-    platform = 'darwin'
-  } else {
-    platform = 'linux'
-  }
+  platform = 'linux'
 }
 
 export async function getGraalVM(
-  graalvm: string,
-  java: string,
-  arch: string
+  graalvm: string
 ): Promise<void> {
-  const version = `${graalvm}.${java}.${arch}`
-  let toolPath = tc.find('GraalVM', getCacheVersionString(version), arch)
-  let compressedFileExtension = ''
+  let version = `${graalvm}`
+  if (graalvm === 'latest') {
+    const response = await octokit.request('GET /repos/{owner}/{repo}/releases/latest', {
+      owner: 'gluonhq',
+      repo: 'graal'
+    })
+    version = response.tag_name
+  }
+  let graalvmShort = `${graalvm}`
+  if (graalvm.includes('-dev-')) {
+    graalvmShort = graalvm.substr(0, graalvm.indexOf('-dev-') + 4)
+  }
+
+  let toolPath = tc.find('GraalVM', getCacheVersionString(version), "amd64")
 
   const allGraalVMVersions = tc.findAllVersions('GraalVM')
   core.info(`Versions of graalvm available: ${allGraalVMVersions}`)
@@ -50,31 +57,25 @@ export async function getGraalVM(
   if (toolPath) {
     core.debug(`GraalVM found in cache ${toolPath}`)
   } else {
-    if (java) {
-      compressedFileExtension = IS_WINDOWS ? '.zip' : '.tar.gz'
-      const downloadPath = `https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-${graalvm}/graalvm-ce-${java}-${platform}-${arch}-${graalvm}${compressedFileExtension}`
+    const downloadPath = `https://github.com/gluonhq/graal/releases/download/${graalvm}/graalvm-svm-${platform}-gluon-${graalvmShort}.zip`
 
-      core.info(`Downloading GraalVM from ${downloadPath}`)
+    core.info(`Downloading Gluon's GraalVM from ${downloadPath}`)
 
-      const graalvmFile = await tc.downloadTool(downloadPath)
-      const tempDir: string = path.join(
-        tempDirectory,
-        `temp_${Math.floor(Math.random() * 2000000000)}`
-      )
-      const graalvmDir = await unzipGraalVMDownload(
-        graalvmFile,
-        compressedFileExtension,
-        tempDir
-      )
-      core.debug(`graalvm extracted to ${graalvmDir}`)
-      toolPath = await tc.cacheDir(
-        graalvmDir,
-        'GraalVM',
-        getCacheVersionString(version)
-      )
-    } else {
-      throw new Error('No java version.')
-    }
+    const graalvmFile = await tc.downloadTool(downloadPath)
+    const tempDir: string = path.join(
+      tempDirectory,
+      `temp_${Math.floor(Math.random() * 2000000000)}`
+    )
+    const graalvmDir = await unzipGraalVMDownload(
+      graalvmFile,
+      tempDir
+    )
+    core.debug(`graalvm extracted to ${graalvmDir}`)
+    toolPath = await tc.cacheDir(
+      graalvmDir,
+      'GraalVM',
+      getCacheVersionString(version)
+    )
   }
 
   const extendedJavaHome = `JAVA_HOME_${version}`
@@ -94,7 +95,6 @@ function getCacheVersionString(version: string): string {
 
 async function extractFiles(
   file: string,
-  fileEnding: string,
   destinationFolder: string
 ): Promise<void> {
   const stats = fs.statSync(file)
@@ -104,11 +104,7 @@ async function extractFiles(
     throw new Error(`Failed to extract ${file} - it is a directory`)
   }
 
-  if ('.tar.gz' === fileEnding) {
-    await tc.extractTar(file, destinationFolder)
-  } else if ('.zip' === fileEnding) {
-    await tc.extractZip(file, destinationFolder)
-  }
+  await tc.extractZip(file, destinationFolder)
 }
 
 async function unpackJars(fsPath: string, javaBinPath: string): Promise<void> {
@@ -133,7 +129,6 @@ async function unpackJars(fsPath: string, javaBinPath: string): Promise<void> {
 
 async function unzipGraalVMDownload(
   repoRoot: string,
-  fileEnding: string,
   destinationFolder: string
 ): Promise<string> {
   await io.mkdirP(destinationFolder)
@@ -141,9 +136,9 @@ async function unzipGraalVMDownload(
   const graalvmFile = path.normalize(repoRoot)
   const stats = fs.statSync(graalvmFile)
   if (stats.isFile()) {
-    await extractFiles(graalvmFile, fileEnding, destinationFolder)
+    await extractFiles(graalvmFile, destinationFolder)
     const graalvmFolder = fs.readdirSync(destinationFolder)[0]
-    if (process.platform === 'darwin') {
+    if (IS_DARWIN) {
       for (const f of fs.readdirSync(
         path.join(destinationFolder, graalvmFolder, 'Contents', 'Home')
       )) {

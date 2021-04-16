@@ -7,25 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup GraalVM
-        uses: DeLaGuardo/setup-graalvm@master
-        with:
-          graalvm: 21.0.0.2
-          java: java11
-          arch: amd64
-
-      - name: Check java binary
-        run: java -version
-
-      - name: Check gu binary
-        run: gu install native-image
-
-  linux_deprecated:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup GraalVM
-        uses: DeLaGuardo/setup-graalvm@master
-        with:
-          graalvm-version: 21.0.0.2.java11
+        uses: gluonhq/setup-graalvm@master
 
       - name: Check java binary
         run: java -version
@@ -48,10 +30,7 @@ jobs:
             gu-binary: gu
     steps:
       - name: Setup GraalVM
-        uses: DeLaGuardo/setup-graalvm@master
-        with:
-          graalvm: 21.0.0.2
-          java: java11
+        uses: gluonhq/setup-graalvm@master
 
       - name: Check java binary
         run: java -version
