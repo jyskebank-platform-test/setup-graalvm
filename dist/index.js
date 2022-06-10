@@ -9468,7 +9468,7 @@ else if (IS_DARWIN) {
 else {
     platform = 'linux';
 }
-function getGraalVM(graalvm, jdk) {
+function getGraalVM(graalvm, jdk, arch) {
     return __awaiter(this, void 0, void 0, function* () {
         let version = `${graalvm}`;
         if (version === 'latest') {
@@ -9486,24 +9486,32 @@ function getGraalVM(graalvm, jdk) {
             graalvmShort = version.substr(0, version.indexOf('-dev-') + 4);
         }
         core.info(`Version of graalvm: ${version}, short: ${graalvmShort}`);
-        let toolPath = tc.find('GraalVM', getCacheVersionString(version), "amd64");
-        const allGraalVMVersions = tc.findAllVersions('GraalVM');
+        let toolPath = tc.find('GraalVM', getCacheVersionString(version), arch);
+        const allGraalVMVersions = tc.findAllVersions('GraalVM', arch);
         core.info(`Versions of graalvm available: ${allGraalVMVersions}`);
         if (toolPath) {
             core.debug(`GraalVM found in cache ${toolPath}`);
         }
         else {
             let java = ``;
+            let m1 = ``;
             if (jdk == 'java17' || jdk == 'java11') {
                 java = `-${jdk}`;
+                if (arch == 'aarch64') {
+                    m1 = `-m1`;
+                }
             }
-            const downloadPath = `https://github.com/gluonhq/graal/releases/download/${version}/graalvm-svm${java}-${platform}-${graalvmShort}.zip`;
+            let ext = 'tar.gz';
+            if (IS_WINDOWS || graalvmShort.startsWith('gluon-22.0') || graalvmShort.startsWith('gluon-21')) {
+                ext = 'zip';
+            }
+            const downloadPath = `https://github.com/gluonhq/graal/releases/download/${version}/graalvm-svm${java}-${platform}${m1}-${graalvmShort}.${ext}`;
             core.info(`Downloading Gluon's GraalVM from ${downloadPath}`);
             const graalvmFile = yield tc.downloadTool(downloadPath);
             const tempDir = path.join(tempDirectory, `temp_${Math.floor(Math.random() * 2000000000)}`);
             const graalvmDir = yield unzipGraalVMDownload(graalvmFile, tempDir);
             core.debug(`graalvm extracted to ${graalvmDir}`);
-            toolPath = yield tc.cacheDir(graalvmDir, 'GraalVM', getCacheVersionString(version));
+            toolPath = yield tc.cacheDir(graalvmDir, 'GraalVM', getCacheVersionString(version), arch);
         }
         const extendedJavaHome = `JAVA_HOME_${version}`;
         core.exportVariable('JAVA_HOME', toolPath);
@@ -9623,7 +9631,8 @@ function run() {
         try {
             const graalvm = core.getInput('graalvm');
             const jdk = core.getInput('jdk');
-            yield installer.getGraalVM(graalvm, jdk);
+            const arch = core.getInput('arch');
+            yield installer.getGraalVM(graalvm, jdk, arch);
             const matchersPath = path.join(__dirname, '..', '.github');
             core.info(`##[add-matcher]${path.join(matchersPath, 'graalvm.json')}`);
         }
